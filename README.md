@@ -1,5 +1,4 @@
-# Turnitin UI — Original thinking. Lasting impact.
-
+# AcadGuard AI: An Intelligent Academic Integrity Platform for Plagiarism Detection, Semantic Similarity Analysis, and Citation Verification
 A responsive, independently designed frontend inspired by Turnitin’s public product offering, with Clerk authentication. Warm ivory, forest ink, soft sage, and lime create a distinct visual system for the marketing site and educator workspace.
 
 **This is an independent prototype, not an official Turnitin service.** Authentication is real and provided by Clerk. Documents, originality scores, AI indicators, and reports remain illustrative. No plagiarism checking, AI detection, document transmission, or Rust backend integration is implemented. Turnitin and its product names belong to their respective owners.
