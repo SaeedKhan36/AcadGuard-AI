@@ -1,0 +1,12 @@
+{
+  "name": "@acadguard/plagengine",
+  "private": true,
+  "version": "0.1.0",
+  "scripts": {
+    "build": "cargo build --workspace --release --locked",
+    "check": "cargo check --workspace --all-targets --locked",
+    "test": "cargo test --workspace --locked",
+    "cli": "cargo run --release --locked -p plagengine --",
+    "demo": "PLAG='cargo run -q --release --locked -p plagengine --' sh examples/demo/run.sh"
+  }
+}

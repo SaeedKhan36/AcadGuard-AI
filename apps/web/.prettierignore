@@ -5,4 +5,3 @@ dist/
 .convex/
 src/routeTree.gen.ts
 convex/_generated/
-package-lock.json

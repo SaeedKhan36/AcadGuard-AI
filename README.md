@@ -1,21 +1,23 @@
 # AcadGuard AI: An Intelligent Academic Integrity Platform for Plagiarism Detection, Semantic Similarity Analysis, and Citation Verification
 
-A responsive academic integrity prototype built with **TanStack Start, TanStack Router, React, Clerk, and Convex**. The public landing page and educator workspace retain the original ivory, forest, sage, and lime design.
+A pnpm and Turborepo monorepo containing a TanStack Start application with TanStack Router, React, Clerk, and Convex, plus a Rust plagiarism detection engine.
 
-Authentication is provided by Clerk. Convex stores each signed-in user's submission metadata, feedback, and workspace preferences. **Similarity scores, AI indicators, source matches, classes, and report content are illustrative.** This project does not perform plagiarism analysis, AI detection, citation verification, or integrate the separate Rust backend. It is an independent concept, unaffiliated with Turnitin.
+Authentication is provided by Clerk. Convex stores each signed-in user's submission metadata, feedback, and workspace preferences. **Similarity scores, AI indicators, source matches, classes, and report content are illustrative.** The Rust engine is available through its library and CLI. The browser does not call it yet, and AI detection and citation verification are not implemented. It is an independent concept, unaffiliated with Turnitin.
 
 ![Landing page preview](docs/landing-preview.jpg)
 
 ## Run locally
 
-Requires Node.js 22.12+.
+Requires Node.js 22.13+, pnpm 11.10.0, and a Rust toolchain with Cargo for engine commands. The engine was validated with Rust 1.97.1. The application uses TypeScript 5.9.
 
 ```sh
-npm install
-cp .env.example .env.local
+corepack enable
+corepack install
+pnpm install --frozen-lockfile
+cp apps/web/.env.example apps/web/.env.local
 ```
 
-Set your Clerk keys in `.env.local`. If this checkout already has a working `.env.local`, edit it instead of replacing it.
+Set your Clerk keys in `apps/web/.env.local`. Keep an existing working environment file. If migrating an older checkout, move its root `.env.local` to `apps/web/.env.local`.
 
 | Variable                       | Purpose                                               |
 | ------------------------------ | ----------------------------------------------------- |
@@ -33,23 +35,23 @@ Never prefix a secret key with `VITE_`. Environment files are ignored by Git; `.
 Connect an **existing development project** before starting the workspace:
 
 ```sh
-npx convex login
-npx convex dev --configure existing --once
+pnpm --filter @acadguard/web exec convex login
+pnpm --filter @acadguard/web exec convex dev --configure existing --once
 ```
 
-The CLI records the deployment and frontend URL in `.env.local`. Check the selected project before deploying: Convex deploys the schema and function definitions from this repository. If sharing a project with another application, merge its existing schema/functions into this checkout first. This app uses `acadguardDocuments`, `acadguardFeedback`, and `acadguardPreferences` table names.
+The CLI records the deployment and frontend URL in `apps/web/.env.local`. Check the selected project before deploying: Convex deploys the schema and function definitions from this repository. If sharing a project with another application, merge its existing schema/functions into this checkout first. This app uses `acadguardDocuments`, `acadguardFeedback`, and `acadguardPreferences` table names.
 
 On that Convex deployment, set `CLERK_JWT_ISSUER_DOMAIN` to your Clerk Frontend API URL (for example, `https://your-instance.clerk.accounts.dev`). Enable the Convex integration in Clerk, or create a Clerk JWT template named `convex` from its Convex preset with audience `convex`. The issuer must match the Clerk application used by this UI.
 
 ```sh
-npx convex env set CLERK_JWT_ISSUER_DOMAIN https://your-instance.clerk.accounts.dev
-npm run convex:dev
+pnpm --filter @acadguard/web exec convex env set CLERK_JWT_ISSUER_DOMAIN https://your-instance.clerk.accounts.dev
+pnpm convex:dev
 ```
 
 In another terminal:
 
 ```sh
-npm run dev
+pnpm dev
 ```
 
 Open [the local app](http://127.0.0.1:5173/). The landing and authentication pages work before Convex is connected; the protected workspace displays a connection notice until its configuration is ready. Samples are loaded only when the user chooses **Load sample documents**.
@@ -57,12 +59,33 @@ Open [the local app](http://127.0.0.1:5173/). The landing and authentication pag
 ## Build and validation
 
 ```sh
-npm test
-npm run build
-npm start
+pnpm check
+pnpm test
+pnpm build
+pnpm start
 ```
 
-The build checks both application and Convex TypeScript and produces a server application in `.output/`. `npm start` serves that build (default port 3000); this is no longer a static SPA. The tests cover safe return URLs, query compatibility, authentication requirements, cross-user document/feedback isolation, preferences, and input validation using `convex-test`.
+The full build checks application and Convex TypeScript, produces the server application in `apps/web/.output/`, and builds the Rust release binary in `packages/plagengine/target/release/plagengine`. `pnpm start` serves the application build on port 3000 by default. `pnpm preview` runs the web preview command. Use `pnpm build:web` for an application-only build without Rust. Tests cover safe return URLs, query compatibility, authentication, cross-user data isolation, preferences, input validation, and the Rust engine.
+
+Turborepo caches web builds, including their `VITE_*` settings and environment files in the inputs. Server-only Clerk configuration is passed to development and build tasks. Cargo manages native artifacts; Rust tasks bypass Turbo caching. Turbo cache files stay in this checkout’s `.turbo/cache`.
+
+## Plagiarism engine
+
+Both Rust crates, their dependency lockfile, tests, evaluation tools, and demo corpus were imported from `/home/shujanforge/Projects/plagenine` into `packages/plagengine`. The source directory is unchanged.
+
+- `plagengine-core` extracts TXT, Markdown, PDF, and DOCX documents, normalizes text, fingerprints token sequences with winnowing, retrieves candidates from a redb index, aligns passages, attributes overlapping sources, and produces filtered similarity reports.
+- It classifies quotations and citations and flags hidden text, homoglyph replacements, and invisible character manipulation.
+- `plagengine` exposes ingestion, checking, saved report filtering, source inspection, and PAN/adversarial evaluation through the CLI.
+
+```sh
+pnpm engine --help
+pnpm demo:engine
+pnpm engine --db /tmp/acadguard-example.db stats
+```
+
+The demo creates its own local index and reports under `packages/plagengine/examples/demo/`. Generated databases, reports, and build artifacts are ignored by Git. All Cargo scripts use the imported `Cargo.lock` with `--locked`.
+
+See the [engine README](packages/plagengine/README.md) for CLI examples, the report schema, algorithm details, evaluation results, and limitations. The engine compares against sources you ingest; it does not search the web or provide semantic or AI writing detection. Browser-to-engine API integration remains future work.
 
 ## Authentication and data
 
@@ -94,37 +117,45 @@ Legacy links such as `/#/app/reports` redirect to the matching protected route. 
 ## Structure
 
 ```text
-src/
-  start.ts                   Start request middleware (CSRF and Clerk)
-  router.tsx                 TanStack Router configuration
-  routes/                    File routes, HTML shell, server authentication guards
-  auth/                      Clerk theme, session server function, safe redirects
-  data/                      Authenticated Convex provider and workspace queries
-  components/                Shared links, branding, report composition
-  pages/                     Landing, login, and workspace UI
-  utils/                     Query parameter compatibility helpers
-  styles.css                 Responsive visual system
-convex/
-  schema.ts                  Namespaced tables and indexes
-  auth.config.ts             Clerk issuer/audience configuration
-  documents.ts               Owned submission metadata and explicit sample loading
-  feedback.ts                Owned feedback queries and mutations
-  preferences.ts             Owned preference queries and mutations
-  lib/auth.ts                Shared authentication and ownership checks
-  _generated/                Typed function and data model helpers
-  workspace.test.ts          Backend isolation and validation tests
-shared/workspace.ts          Shared UI data types and sample fixtures
+apps/web/
+  package.json               TanStack Start, Convex, and validation commands
+  .env.example               Clerk and Convex configuration template
+  src/
+    start.ts                 CSRF and Clerk request middleware
+    router.tsx               TanStack Router configuration
+    routes/                  File routes, HTML shell, server auth guards
+    auth/                    Clerk theme, server session, safe redirects
+    data/                    Authenticated Convex provider and queries
+    components/              Shared links, branding, report composition
+    pages/                   Landing, login, and workspace UI
+    utils/                   Query compatibility helpers
+    styles.css               Responsive visual system
+  convex/                    Schema, authenticated functions, generated types, tests
+  convex.json                Local Convex function directory configuration
+  shared/workspace.ts        Shared UI data types and sample fixtures
+  vitest.config.ts           Application and Convex tests
+packages/plagengine/
+  Cargo.toml                 Rust workspace containing core and CLI crates
+  Cargo.lock                 Locked Rust dependencies
+  crates/                    Algorithms, extraction, index, reports, tests
+  examples/demo/             Local corpus, sample essay, demo script
+  README.md                  Engine usage, report format, evaluations
+docs/                        UI previews, fixtures, verification history
+pnpm-workspace.yaml          Workspace packages and allowed dependency builds
+pnpm-lock.yaml               Locked JavaScript dependencies
+turbo.json                   Build, check, test, and development tasks
+vercel.json                  Server application build configuration
 ```
 
-Run `npm run convex:codegen` after linking the existing project or changing backend functions. Do not edit the generated TanStack route tree.
+Run `pnpm convex:codegen` after linking the existing project or changing backend functions. Do not edit the generated TanStack route tree.
 
 ## Vercel
 
-`vercel.json` selects the `tanstack-start` framework. Nitro builds the server and assets for Vercel; remove any project-level legacy `dist` output override and SPA rewrite. Deep links are handled by Start's server router.
+The root `vercel.json` selects the `tanstack-start` framework, installs with pnpm, and runs `pnpm build:web`. When building on Vercel, Nitro writes its server and assets to the repository root's `.vercel/output`. Remove any project-level legacy `dist` output override and SPA rewrite. Deep links are handled by Start's server router.
 
 Add the Clerk public variables, server-only `CLERK_SECRET_KEY`, and `VITE_CONVEX_URL` to each relevant Vercel environment. Use matching Clerk/Convex environments. Browser variables are embedded during the build, so changing them requires redeployment. Production should use a configured Clerk production application.
 
-Deploy Convex functions to the intended production deployment separately with `npm run convex:deploy`, then deploy the UI. If the existing Convex deployment has other functions, merge and preserve them before deploying. `CLERK_JWT_ISSUER_DOMAIN` belongs on the Convex deployment rather than the browser.
+Deploy Convex functions to the intended production deployment separately with `pnpm convex:deploy`, then deploy the UI. If the existing Convex deployment has other functions, merge and preserve them before deploying. `CLERK_JWT_ISSUER_DOMAIN` belongs on the Convex deployment rather than the browser.
 
 ## References
 

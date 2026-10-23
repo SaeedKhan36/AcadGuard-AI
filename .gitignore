@@ -1,5 +1,7 @@
 node_modules/
 dist/
+.turbo/
+target/
 *.local
 .DS_Store
 *.tsbuildinfo
