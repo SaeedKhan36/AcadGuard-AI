@@ -3,13 +3,32 @@
   "cacheDir": ".turbo/cache",
   "tasks": {
     "build": {
-      "dependsOn": ["^build"],
-      "inputs": ["$TURBO_DEFAULT$", ".env*"],
-      "env": ["VITE_*"],
-      "outputs": ["dist/**"]
+      "dependsOn": [
+        "^build"
+      ],
+      "inputs": [
+        "$TURBO_DEFAULT$",
+        ".env*"
+      ],
+      "env": [
+        "VITE_*",
+        "NITRO_PRESET",
+        "VERCEL",
+        "VERCEL_*"
+      ],
+      "outputs": [
+        ".output/**",
+        ".vercel/output/**",
+        "$TURBO_ROOT$/.vercel/output/**"
+      ],
+      "passThroughEnv": [
+        "CLERK_SECRET_KEY"
+      ]
     },
     "check": {
-      "dependsOn": ["^check"],
+      "dependsOn": [
+        "^check"
+      ],
       "outputs": []
     },
     "test": {
@@ -18,7 +37,10 @@
     "dev": {
       "cache": false,
       "persistent": true,
-      "passThroughEnv": ["VITE_*"]
+      "passThroughEnv": [
+        "VITE_*",
+        "CLERK_SECRET_KEY"
+      ]
     }
   }
 }

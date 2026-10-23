@@ -15,7 +15,12 @@
     "test": "turbo run test",
     "preview": "pnpm --filter @acadguard/web preview",
     "engine": "pnpm --filter @acadguard/plagengine cli",
-    "demo:engine": "pnpm --filter @acadguard/plagengine demo"
+    "demo:engine": "pnpm --filter @acadguard/plagengine demo",
+    "typecheck": "turbo run check",
+    "start": "pnpm --filter @acadguard/web start",
+    "convex:dev": "pnpm --filter @acadguard/web convex:dev",
+    "convex:deploy": "pnpm --filter @acadguard/web convex:deploy",
+    "convex:codegen": "pnpm --filter @acadguard/web convex:codegen"
   },
   "devDependencies": {
     "turbo": "2.11.10"

@@ -1,4 +1,4 @@
-import { Link } from "react-router-dom";
+import { Link } from "./Navigation";
 import { ArrowUpRight } from "lucide-react";
 export function Brand({ light = false }: { light?: boolean }) {
   return (

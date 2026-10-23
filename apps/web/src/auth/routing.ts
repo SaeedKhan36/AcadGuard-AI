@@ -14,5 +14,15 @@ export function authDestination(
 ): string {
   const requested = new URLSearchParams(search).get("redirect_url");
   if (!requested || /[\\\u0000-\u0020]/.test(requested)) return fallback;
-  return /^\/dashboard(?:[/?#]|$)/.test(requested) ? requested : fallback;
+  if (requested.startsWith("//")) return fallback;
+  try {
+    // Clerk can convert the relative target into an absolute URL when switching
+    // between sign-in and sign-up. Discard its origin; only navigate locally.
+    const url = new URL(requested, "http://app.local");
+    if (!/^https?:$/.test(url.protocol)) return fallback;
+    const local = url.pathname + url.search + url.hash;
+    return /^\/dashboard(?:[/?#]|$)/.test(local) ? local : fallback;
+  } catch {
+    return fallback;
+  }
 }

@@ -1,6 +1,7 @@
-import { SignIn, SignUp, useAuth } from "@clerk/react";
+import { SignIn, SignUp, useAuth } from "@clerk/tanstack-react-start";
 import { ArrowLeft } from "lucide-react";
-import { Link, Navigate, useLocation } from "react-router-dom";
+import { useLocation } from "@tanstack/react-router";
+import { Link, Navigate } from "../components/Navigation";
 import { Brand } from "../components/Brand";
 import { authConfig } from "../auth/config";
 import { authDestination } from "../auth/routing";
@@ -8,7 +9,7 @@ import { AuthLoading } from "../auth/RequireAuth";
 
 export default function Login({ register = false }: { register?: boolean }) {
   const { isLoaded, isSignedIn } = useAuth();
-  const { search } = useLocation();
+  const { searchStr: search } = useLocation();
   const destination = authDestination(
     search,
     register ? authConfig.afterSignUpUrl : authConfig.afterSignInUrl,

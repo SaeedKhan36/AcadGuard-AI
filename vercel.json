@@ -1,13 +1,6 @@
 {
   "$schema": "https://openapi.vercel.sh/vercel.json",
-  "framework": "vite",
+  "framework": "tanstack-start",
   "buildCommand": "pnpm build:web",
-  "outputDirectory": "apps/web/dist",
-  "rewrites": [
-    {
-      "source": "/(.*)",
-      "destination": "/index.html"
-    }
-  ],
   "installCommand": "pnpm install --frozen-lockfile"
 }

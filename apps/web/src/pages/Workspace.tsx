@@ -1,5 +1,10 @@
-import { UserButton, useClerk, useUser } from "@clerk/react";
-import { Link, useNavigate } from "react-router-dom";
+import { useMutation, useQuery } from "convex/react";
+import { api } from "../../convex/_generated/api";
+import type { WorkspacePreferences } from "../../shared/workspace";
+import { WorkspaceConnection } from "../data/WorkspaceConnection";
+import type { DocumentItem } from "../../shared/workspace";
+import { UserButton, useClerk, useUser } from "@clerk/tanstack-react-start";
+import { Link, useAppNavigate } from "../components/Navigation";
 import { useEffect, useRef, useState } from "react";
 import {
   LayoutDashboard,
@@ -31,92 +36,6 @@ import {
   CheckCircle2,
 } from "lucide-react";
 import { Brand } from "../components/Brand";
-type DocumentItem = {
-  id: number;
-  name: string;
-  course: string;
-  author: string;
-  initials: string;
-  date: string;
-  similarity: number;
-  ai: number;
-  status: string;
-  words: number;
-};
-const startingDocs: DocumentItem[] = [
-  {
-    id: 1,
-    name: "The changing landscape of urban ecology",
-    course: "Environmental Studies",
-    author: "Alex Lewis",
-    initials: "AL",
-    date: "Oct 23, 2026",
-    similarity: 8,
-    ai: 0,
-    status: "Reviewed",
-    words: 2450,
-  },
-  {
-    id: 2,
-    name: "Ethics in the age of artificial intelligence",
-    course: "Philosophy & Ethics",
-    author: "Maya Patel",
-    initials: "MP",
-    date: "Oct 23, 2026",
-    similarity: 14,
-    ai: 22,
-    status: "Needs review",
-    words: 3180,
-  },
-  {
-    id: 3,
-    name: "Rethinking sustainable economic growth",
-    course: "Environmental Studies",
-    author: "James Wilson",
-    initials: "JW",
-    date: "Oct 22, 2026",
-    similarity: 5,
-    ai: 0,
-    status: "Reviewed",
-    words: 2800,
-  },
-  {
-    id: 4,
-    name: "The language of belonging",
-    course: "Academic Writing",
-    author: "Sofia Chen",
-    initials: "SC",
-    date: "Oct 22, 2026",
-    similarity: 27,
-    ai: 0,
-    status: "Needs review",
-    words: 1920,
-  },
-  {
-    id: 5,
-    name: "Community-led approaches to conservation",
-    course: "Environmental Studies",
-    author: "Noah Martin",
-    initials: "NM",
-    date: "Oct 21, 2026",
-    similarity: 11,
-    ai: 0,
-    status: "Reviewed",
-    words: 2240,
-  },
-  {
-    id: 6,
-    name: "A critical reading of modern narratives",
-    course: "Academic Writing",
-    author: "Emma Davis",
-    initials: "ED",
-    date: "Oct 21, 2026",
-    similarity: 6,
-    ai: 0,
-    status: "Reviewed",
-    words: 2640,
-  },
-];
 const navItems = [
   { id: "overview", label: "Overview", icon: LayoutDashboard },
   { id: "submissions", label: "Submissions", icon: Files },
@@ -146,7 +65,33 @@ const articles = [
   },
 ];
 export default function Workspace({ route }: { route: string }) {
-  const navigate = useNavigate();
+  return (
+    <WorkspaceConnection>
+      {({ documents, preferences }) => (
+        <WorkspaceContent
+          route={route}
+          docs={documents}
+          storedPreferences={preferences}
+        />
+      )}
+    </WorkspaceConnection>
+  );
+}
+function WorkspaceContent({
+  route,
+  docs,
+  storedPreferences,
+}: {
+  route: string;
+  docs: DocumentItem[];
+  storedPreferences: WorkspacePreferences | null;
+}) {
+  const navigate = useAppNavigate();
+  const createSubmission = useMutation(api.documents.createDemo);
+  const loadSamples = useMutation(api.documents.loadSamples);
+  const persistFeedback = useMutation(api.feedback.save);
+  const persistPreferences = useMutation(api.preferences.save);
+  const [saving, setSaving] = useState(false);
   const { user } = useUser();
   const { signOut } = useClerk();
   const displayName =
@@ -162,7 +107,7 @@ export default function Workspace({ route }: { route: string }) {
     .toUpperCase();
   const section =
     route.replace("#/app", "").split("?")[0].split("/")[1] || "overview";
-  const [docs, setDocs] = useState(startingDocs);
+
   const [search, setSearch] = useState("");
   const [filter, setFilter] = useState("All submissions");
   const [upload, setUpload] = useState(false);
@@ -176,6 +121,10 @@ export default function Workspace({ route }: { route: string }) {
   const [article, setArticle] = useState<number | null>(() =>
     route.includes("?article=") ? Number(route.split("?article=")[1]) : null,
   );
+  const feedbackKey = selected?.id || "draft";
+  const storedFeedback = useQuery(api.feedback.get, {
+    documentKey: feedbackKey,
+  });
   const [feedback, setFeedback] = useState("");
   const [savedFeedback, setSavedFeedback] = useState(false);
   const [settingsSaved, setSettingsSaved] = useState(false);
@@ -194,6 +143,15 @@ export default function Workspace({ route }: { route: string }) {
     setPreferences((previous) => ({ ...previous, [key]: value }));
     setSettingsSaved(false);
   };
+  useEffect(() => {
+    if (storedPreferences) setPreferences(storedPreferences);
+  }, [storedPreferences]);
+  useEffect(() => {
+    setFeedback(storedFeedback ?? "");
+  }, [storedFeedback, feedbackKey]);
+  useEffect(() => {
+    setSavedFeedback(false);
+  }, [feedbackKey]);
   const fileInput = useRef<HTMLInputElement>(null);
   useEffect(() => {
     const query = route.split("?")[1];
@@ -268,29 +226,64 @@ export default function Workspace({ route }: { route: string }) {
     setSelectedFile(file);
     setUploadError("");
   };
-  const addDemoDocument = () => {
-    if (!selectedFile) return;
-    setDocs((prev) => [
-      {
-        id: Date.now(),
-        name: selectedFile.name.replace(/\.[^.]+$/, ""),
+  const addDemoDocument = async () => {
+    if (!selectedFile || saving) return;
+    setSaving(true);
+    try {
+      await createSubmission({
+        fileName: selectedFile.name,
+        fileSize: selectedFile.size,
         course: "Academic Writing",
-        author: displayName,
-        initials,
-        date: "Oct 23, 2026",
-        similarity: 8,
-        ai: 0,
-        status: "Demo report",
-        words: 2450,
-      },
-      ...prev,
-    ]);
-    setUpload(false);
-    setSelectedFile(null);
-    notify(
-      "Demo submission added. Scores are sample values; no analysis was performed.",
-    );
-    navigate("/dashboard/submissions");
+      });
+      setUpload(false);
+      setSelectedFile(null);
+      notify(
+        "Submission metadata saved. Report scores are illustrative; no document analysis was performed.",
+      );
+      navigate("/dashboard/submissions");
+    } catch {
+      setUploadError("Your submission could not be saved. Please try again.");
+    } finally {
+      setSaving(false);
+    }
+  };
+  const saveFeedback = async () => {
+    if (saving || !feedback.trim()) return;
+    setSaving(true);
+    try {
+      await persistFeedback({ documentKey: feedbackKey, body: feedback });
+      setSavedFeedback(true);
+      notify("Feedback saved to your workspace.");
+    } catch {
+      notify("Feedback could not be saved. Please try again.");
+    } finally {
+      setSaving(false);
+    }
+  };
+  const savePreferences = async () => {
+    if (saving) return;
+    setSaving(true);
+    try {
+      await persistPreferences(preferences);
+      setSettingsSaved(true);
+      notify("Preferences saved to your workspace.");
+    } catch {
+      notify("Preferences could not be saved. Please try again.");
+    } finally {
+      setSaving(false);
+    }
+  };
+  const addSamples = async () => {
+    if (saving) return;
+    setSaving(true);
+    try {
+      await loadSamples({});
+      notify("Sample submissions added to your private workspace.");
+    } catch {
+      notify("Sample submissions could not be added. Please try again.");
+    } finally {
+      setSaving(false);
+    }
   };
   const titles: Record<string, string> = {
     overview: "Your learning, in perspective.",
@@ -434,7 +427,7 @@ export default function Workspace({ route }: { route: string }) {
           </div>
           <div className="topbar-right">
             <span className="demo-pill">
-              <span className="live-dot" /> Demo workspace
+              <span className="live-dot" /> Convex connected
             </span>
             <span className="topbar-divider" />
             <div className="notification-wrap">
@@ -482,6 +475,26 @@ export default function Workspace({ route }: { route: string }) {
               </button>
             )}
           </div>
+          {docs.length === 0 &&
+            ["overview", "submissions", "reports", "ai"].includes(section) && (
+              <div className="info-banner">
+                <ShieldCheck size={22} />
+                <div>
+                  <strong>Your private workspace is ready.</strong>
+                  <p>
+                    Add a submission, or explore with clearly labeled sample
+                    documents.
+                  </p>
+                  <button
+                    className="button button-outline small"
+                    disabled={saving}
+                    onClick={() => void addSamples()}
+                  >
+                    Load sample documents <Plus size={15} />
+                  </button>
+                </div>
+              </div>
+            )}
           {section === "overview" && (
             <>
               <div className="welcome-banner">
@@ -666,7 +679,7 @@ export default function Workspace({ route }: { route: string }) {
                             <td>
                               <span className="student-cell">
                                 <span
-                                  className={`tiny-avatar avatar-${d.id % 3}`}
+                                  className={`tiny-avatar avatar-${d.initials.charCodeAt(0) % 3}`}
                                 >
                                   {d.initials}
                                 </span>
@@ -924,6 +937,7 @@ export default function Workspace({ route }: { route: string }) {
                 <label htmlFor="feedback">Your feedback</label>
                 <textarea
                   id="feedback"
+                  maxLength={10000}
                   value={feedback}
                   onChange={(e) => {
                     setFeedback(e.target.value);
@@ -933,18 +947,15 @@ export default function Workspace({ route }: { route: string }) {
                 />
                 <button
                   className="button button-dark"
-                  disabled={!feedback.trim()}
-                  onClick={() => {
-                    setSavedFeedback(true);
-                    notify("Feedback saved for this demo session.");
-                  }}
+                  disabled={!feedback.trim() || saving}
+                  onClick={() => void saveFeedback()}
                 >
                   {savedFeedback ? (
                     <Check size={16} />
                   ) : (
                     <MessageSquare size={16} />
                   )}{" "}
-                  {savedFeedback ? "Feedback saved" : "Save demo feedback"}
+                  {savedFeedback ? "Feedback saved" : "Save feedback"}
                 </button>
                 <div className="feedback-rubric">
                   <h3>Review checklist</h3>
@@ -960,7 +971,9 @@ export default function Workspace({ route }: { route: string }) {
                     </label>
                   ))}
                 </div>
-                <small>Comments are stored only while this page is open.</small>
+                <small>
+                  Feedback is saved to your private Convex workspace.
+                </small>
               </aside>
             </div>
           )}
@@ -1006,8 +1019,7 @@ export default function Workspace({ route }: { route: string }) {
               className="settings-panel"
               onSubmit={(e) => {
                 e.preventDefault();
-                setSettingsSaved(true);
-                notify("Preferences saved for this demo session.");
+                void savePreferences();
               }}
             >
               <div className="panel-heading">
@@ -1095,8 +1107,12 @@ export default function Workspace({ route }: { route: string }) {
                 </label>
               </div>
               <div className="settings-bottom">
-                <span>Preferences are held in this demo session only.</span>
-                <button className="button button-dark" type="submit">
+                <span>Preferences are saved to your private workspace.</span>
+                <button
+                  className="button button-dark"
+                  type="submit"
+                  disabled={saving}
+                >
                   {settingsSaved ? "Preferences saved" : "Save preferences"}
                   <Check size={16} />
                 </button>
@@ -1168,14 +1184,14 @@ export default function Workspace({ route }: { route: string }) {
             <div className="upload-disclaimer">
               <ShieldCheck size={18} />
               <p>
-                <b>This is a local UI demo.</b> Your file is not uploaded, read,
-                or analyzed. The added report uses fixed sample scores.
+                <b>Report scores are illustrative.</b> Only the file name and
+                size are saved. File contents are not uploaded or analyzed.
               </p>
             </div>
             <button
               className="button button-dark"
-              disabled={!selectedFile}
-              onClick={addDemoDocument}
+              disabled={!selectedFile || saving}
+              onClick={() => void addDemoDocument()}
             >
               Add demo submission <ArrowUpRight size={17} />
             </button>
@@ -1417,19 +1433,18 @@ export default function Workspace({ route }: { route: string }) {
                     </label>
                     <textarea
                       id="report-feedback"
+                      maxLength={10000}
                       value={feedback}
                       onChange={(e) => setFeedback(e.target.value)}
                       placeholder="What’s working? What could the writer explore next?"
                     />
                     <button
                       className="button button-dark"
-                      disabled={!feedback.trim()}
-                      onClick={() =>
-                        notify("Comment saved for this demo session.")
-                      }
+                      disabled={!feedback.trim() || saving}
+                      onClick={() => void saveFeedback()}
                     >
                       <Check size={15} />
-                      Save demo comment
+                      Save comment
                     </button>
                   </>
                 )}
