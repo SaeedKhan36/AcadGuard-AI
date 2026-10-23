@@ -1,3 +1,5 @@
+import { UserButton, useClerk, useUser } from "@clerk/react";
+import { Link, useNavigate } from "react-router-dom";
 import { useEffect, useRef, useState } from "react";
 import {
   LayoutDashboard,
@@ -144,6 +146,20 @@ const articles = [
   },
 ];
 export default function Workspace({ route }: { route: string }) {
+  const navigate = useNavigate();
+  const { user } = useUser();
+  const { signOut } = useClerk();
+  const displayName =
+    user?.fullName ||
+    user?.username ||
+    user?.primaryEmailAddress?.emailAddress ||
+    "Your account";
+  const initials = displayName
+    .split(/\s+/)
+    .slice(0, 2)
+    .map((part) => part[0])
+    .join("")
+    .toUpperCase();
   const section =
     route.replace("#/app", "").split("?")[0].split("/")[1] || "overview";
   const [docs, setDocs] = useState(startingDocs);
@@ -164,7 +180,7 @@ export default function Workspace({ route }: { route: string }) {
   const [savedFeedback, setSavedFeedback] = useState(false);
   const [settingsSaved, setSettingsSaved] = useState(false);
   const [preferences, setPreferences] = useState({
-    name: "Jordan Morgan",
+    name: displayName,
     role: "Educator",
     institution: "Demo institution",
     language: "English",
@@ -259,8 +275,8 @@ export default function Workspace({ route }: { route: string }) {
         id: Date.now(),
         name: selectedFile.name.replace(/\.[^.]+$/, ""),
         course: "Academic Writing",
-        author: "Jordan Morgan",
-        initials: "JM",
+        author: displayName,
+        initials,
         date: "Oct 23, 2026",
         similarity: 8,
         ai: 0,
@@ -274,7 +290,7 @@ export default function Workspace({ route }: { route: string }) {
     notify(
       "Demo submission added. Scores are sample values; no analysis was performed.",
     );
-    window.location.hash = "/app/submissions";
+    navigate("/dashboard/submissions");
   };
   const titles: Record<string, string> = {
     overview: "Your learning, in perspective.",
@@ -326,10 +342,10 @@ export default function Workspace({ route }: { route: string }) {
         <span className="sidebar-label">YOUR WORKSPACE</span>
         <nav>
           {navItems.map(({ id, label, icon: Icon }) => (
-            <a
+            <Link
               key={id}
               className={section === id ? "active" : ""}
-              href={`#/app${id === "overview" ? "" : "/" + id}`}
+              to={`/dashboard${id === "overview" ? "" : "/" + id}`}
               onClick={() => {
                 setSearch("");
                 setMobileNav(false);
@@ -340,25 +356,25 @@ export default function Workspace({ route }: { route: string }) {
               {id === "submissions" && (
                 <span className="nav-count">{docs.length}</span>
               )}
-            </a>
+            </Link>
           ))}
         </nav>
         <span className="sidebar-label sidebar-second-label">GOOD TO KNOW</span>
         <nav>
-          <a
-            href="#/app/resources"
+          <Link
+            to="/dashboard/resources"
             className={section === "resources" ? "active" : ""}
           >
             <BookOpen size={18} />
             Resource library
-          </a>
-          <a
-            href="#/app/settings"
+          </Link>
+          <Link
+            to="/dashboard/settings"
             className={section === "settings" ? "active" : ""}
           >
             <Settings size={18} />
             Settings
-          </a>
+          </Link>
         </nav>
         <div className="sidebar-bottom">
           <div className="sidebar-promo">
@@ -369,21 +385,27 @@ export default function Workspace({ route }: { route: string }) {
               Stay original.
             </strong>
             <p>A little inspiration for your next big idea.</p>
-            <a href="#/app/resources">
+            <Link to="/dashboard/resources">
               Explore resources <ArrowUpRight size={15} />
-            </a>
+            </Link>
           </div>
-          <a className="profile" href="#/app/settings">
-            <span className="avatar">JM</span>
+          <Link className="profile" to="/dashboard/settings">
+            <span className="avatar">{initials}</span>
             <div>
-              <strong>Jordan Morgan</strong>
+              <strong>{displayName}</strong>
               <span>Educator</span>
             </div>
             <MoreHorizontal size={17} />
-          </a>
-          <a className="back-home" href="#/">
+          </Link>
+          <button
+            className="back-home sign-out-button"
+            onClick={() => void signOut({ redirectUrl: "/" })}
+          >
+            <LogOut size={13} /> Sign out
+          </button>
+          <Link className="back-home" to="/">
             <LogOut size={13} /> Back to website
-          </a>
+          </Link>
         </div>
       </aside>
       {mobileNav && (
@@ -432,13 +454,7 @@ export default function Workspace({ route }: { route: string }) {
                 </div>
               )}
             </div>
-            <a
-              href="#/app/settings"
-              className="avatar small-avatar"
-              aria-label="Profile settings"
-            >
-              JM
-            </a>
+            <UserButton />
           </div>
         </header>
         <main className="app-content">
@@ -452,7 +468,7 @@ export default function Workspace({ route }: { route: string }) {
               <h1>{titles[section] || titles.overview}</h1>
               <p>
                 {section === "overview"
-                  ? "Welcome back, Jordan. Here’s where things stand today."
+                  ? `Welcome back, ${user?.firstName || "there"}. Here’s where things stand today.`
                   : "Explore a more thoughtful approach to academic integrity."}
               </p>
             </div>
@@ -477,9 +493,9 @@ export default function Workspace({ route }: { route: string }) {
                     there’s an original thinker.
                   </h2>
                   <p>Give good ideas the attention they deserve.</p>
-                  <a href="#/app/reports">
+                  <Link to="/dashboard/reports">
                     Take a closer look <ArrowRight size={15} />
-                  </a>
+                  </Link>
                 </div>
                 <div className="banner-art">
                   <div className="art-sheet">
@@ -575,9 +591,9 @@ export default function Workspace({ route }: { route: string }) {
                     </span>
                   </div>
                   {section === "overview" ? (
-                    <a href="#/app/submissions">
+                    <Link to="/dashboard/submissions">
                       View all submissions <ArrowUpRight size={15} />
-                    </a>
+                    </Link>
                   ) : (
                     <span className="sample-label">ILLUSTRATIVE DATA</span>
                   )}
@@ -729,9 +745,9 @@ export default function Workspace({ route }: { route: string }) {
                         Context makes all the difference. Open a report to
                         explore sources and start a meaningful conversation.
                       </p>
-                      <a href="#/app/resources?article=1">
+                      <Link to="/dashboard/resources?article=1">
                         A guide to similarity <ArrowUpRight size={15} />
-                      </a>
+                      </Link>
                     </div>
                   </div>
                   <div className="activity-card">
@@ -744,12 +760,12 @@ export default function Workspace({ route }: { route: string }) {
                         <strong>Research reflection · Final draft</strong>
                         <span>Academic Writing · 24 students</span>
                       </div>
-                      <a
-                        href="#/app/classes"
+                      <Link
+                        to="/dashboard/classes"
                         aria-label="View upcoming assignment"
                       >
                         <ArrowUpRight size={17} />
-                      </a>
+                      </Link>
                     </div>
                   </div>
                 </div>
@@ -804,7 +820,7 @@ export default function Workspace({ route }: { route: string }) {
                       onClick={() => {
                         setFilter("All submissions");
                         setSearch(c.name);
-                        window.location.hash = "/app/submissions";
+                        navigate("/dashboard/submissions");
                       }}
                     >
                       View submissions <ArrowUpRight size={16} />
@@ -999,7 +1015,7 @@ export default function Workspace({ route }: { route: string }) {
                   <h2>Your profile</h2>
                   <span>A few things that make this workspace yours.</span>
                 </div>
-                <span className="avatar">JM</span>
+                <span className="avatar">{initials}</span>
               </div>
               <div className="settings-fields">
                 <label>

@@ -5340,3 +5340,82 @@ textarea {
 .table-scroll {
   position: relative;
 }
+/* Clerk authentication */
+.auth-login-card {
+  max-width: 400px;
+}
+.clerk-auth-container {
+  width: 100%;
+  margin-top: 28px;
+}
+.clerk-card-box {
+  width: 100%;
+  box-shadow: none;
+  border: 1px solid var(--line);
+  border-radius: 12px;
+}
+.clerk-card {
+  background: transparent;
+  box-shadow: none;
+}
+.clerk-primary {
+  background: var(--ink);
+  box-shadow: none;
+  text-transform: none;
+}
+.clerk-footer-link {
+  color: var(--ink);
+}
+.auth-status {
+  min-height: 60vh;
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  align-items: center;
+  gap: 18px;
+  padding: 35px;
+  text-align: center;
+}
+.auth-status h1 {
+  font-size: 24px;
+  font-weight: 500;
+  letter-spacing: -0.7px;
+}
+.auth-status p {
+  font-size: 12px;
+  line-height: 1.8;
+  color: var(--muted);
+  max-width: 390px;
+}
+.clerk-auth-container .auth-status {
+  min-height: 260px;
+  padding-inline: 10px;
+}
+.clerk-auth-container .auth-status h1 {
+  font-size: 20px;
+}
+.auth-spinner {
+  width: 27px;
+  height: 27px;
+  border: 2px solid #dde5d2;
+  border-top-color: #6b8451;
+  border-radius: 50%;
+  animation: auth-spin 1s linear infinite;
+}
+@keyframes auth-spin {
+  to {
+    transform: rotate(360deg);
+  }
+}
+.sign-out-button {
+  padding: 0;
+  text-align: left;
+}
+.profile > div {
+  min-width: 0;
+}
+.profile strong {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}

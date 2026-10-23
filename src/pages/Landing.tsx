@@ -1,3 +1,4 @@
+import { Link } from "react-router-dom";
 import { useState } from "react";
 import {
   ArrowRight,
@@ -60,7 +61,7 @@ const questions = [
   ],
   [
     "Can I explore the workspace?",
-    "Yes. Choose “Explore the workspace” to open this independent interface concept. All documents, scores, and insights are illustrative demo data. No account is required.",
+    "Yes. Choose “Explore the workspace” to open this independent interface concept. Sign in or create an account to explore the workspace. Documents, scores, and insights remain illustrative demo data.",
   ],
 ];
 export default function Landing() {
@@ -74,9 +75,9 @@ export default function Landing() {
         <div className="announcement">
           <span className="announcement-pill">A NEW CHAPTER</span>
           <span>Human potential. Meet responsible AI.</span>
-          <a href="#solutions">
+          <Link to="#solutions">
             Discover what’s possible <ArrowUpRight size={13} />
-          </a>
+          </Link>
           <button
             aria-label="Dismiss announcement"
             onClick={() => setAnnouncement(false)}
@@ -88,23 +89,23 @@ export default function Landing() {
       <header className="site-header container">
         <Brand />
         <nav className={menu ? "site-nav open" : "site-nav"}>
-          <a href="#solutions" onClick={() => setMenu(false)}>
+          <Link to="#solutions" onClick={() => setMenu(false)}>
             Solutions <ChevronDown size={12} />
-          </a>
-          <a href="#approach" onClick={() => setMenu(false)}>
+          </Link>
+          <Link to="#approach" onClick={() => setMenu(false)}>
             Our approach
-          </a>
-          <a href="#resources" onClick={() => setMenu(false)}>
+          </Link>
+          <Link to="#resources" onClick={() => setMenu(false)}>
             Resources
-          </a>
+          </Link>
         </nav>
         <div className="header-actions">
-          <a className="login-link" href="#/login">
+          <Link className="login-link" to="/auth/login">
             Log in <ArrowUpRight size={15} />
-          </a>
-          <a className="button button-dark small" href="#/app">
+          </Link>
+          <Link className="button button-dark small" to="/dashboard">
             Explore workspace <ArrowUpRight size={15} />
-          </a>
+          </Link>
         </div>
         <button
           className="mobile-menu"
@@ -135,12 +136,12 @@ export default function Landing() {
               own it.
             </p>
             <div className="hero-buttons">
-              <a className="button button-dark" href="#/app">
+              <Link className="button button-dark" to="/dashboard">
                 Explore the workspace <ArrowUpRight size={18} />
-              </a>
-              <a className="text-button" href="#solutions">
+              </Link>
+              <Link className="text-button" to="#solutions">
                 Find your solution <ArrowRight size={17} />
-              </a>
+              </Link>
             </div>
             <div className="hero-note">
               <span className="mini-avatars">
@@ -216,20 +217,20 @@ export default function Landing() {
                   ))}
                 </h3>
                 <p>{copy}</p>
-                <a
-                  href={
+                <Link
+                  to={
                     number === "02"
-                      ? "#/app/ai"
+                      ? "/dashboard/ai"
                       : number === "03"
-                        ? "#/app/feedback"
-                        : "#/app/reports"
+                        ? "/dashboard/feedback"
+                        : "/dashboard/reports"
                   }
                 >
                   <span>{tag}</span>
                   <span className="round-arrow">
                     <ArrowUpRight size={18} />
                   </span>
-                </a>
+                </Link>
               </article>
             ))}
           </div>
@@ -320,7 +321,7 @@ export default function Landing() {
                   <Check size={15} /> Help students develop their own voice
                 </li>
               </ul>
-              <ArrowLink href="#/app/feedback">
+              <ArrowLink href="/dashboard/feedback">
                 See a more complete picture
               </ArrowLink>
             </div>
@@ -373,7 +374,7 @@ export default function Landing() {
                     ? "Give the next generation the skills to write with confidence, think independently, and navigate AI responsibly."
                     : "Bring students, educators, and institutions together around authentic work. Make assessment meaningful and give original thinking room to grow."}
               </p>
-              <ArrowLink href="#/app/classes">
+              <ArrowLink href="/dashboard/classes">
                 Explore the possibilities
               </ArrowLink>
             </div>
@@ -445,7 +446,9 @@ export default function Landing() {
                 Keep your thinking <span>fresh.</span>
               </h2>
             </div>
-            <ArrowLink href="#/app/resources">Explore all resources</ArrowLink>
+            <ArrowLink href="/dashboard/resources">
+              Explore all resources
+            </ArrowLink>
           </div>
           <div className="resource-grid">
             {[
@@ -468,9 +471,9 @@ export default function Landing() {
                 icon: MessageSquare,
               },
             ].map(({ tag, title, className, icon: Icon }, i) => (
-              <a
+              <Link
                 className="resource-card"
-                href={`#/app/resources?article=${i}`}
+                to={`/dashboard/resources?article=${i}`}
                 key={tag}
               >
                 <div className={`resource-art ${className}`}>
@@ -486,7 +489,7 @@ export default function Landing() {
                 </div>
                 <span className="small-label">{tag} · 1 MIN READ</span>
                 <h3>{title}</h3>
-              </a>
+              </Link>
             ))}
           </div>
         </section>
@@ -498,9 +501,9 @@ export default function Landing() {
               <br />
               <span>Clear answers.</span>
             </h2>
-            <a className="arrow-link" href="#/app/resources">
+            <Link className="arrow-link" to="/dashboard/resources">
               Visit the resource library <ArrowUpRight size={17} />
-            </a>
+            </Link>
           </div>
           <div className="faq-list">
             {questions.map(([q, a], i) => (
@@ -531,9 +534,9 @@ export default function Landing() {
               <span>only you can do.</span>
             </h2>
             <p>Original ideas. Confident educators. A world of possibility.</p>
-            <a href="#/app" className="button button-lime">
+            <Link to="/dashboard" className="button button-lime">
               Step inside the workspace <ArrowUpRight size={18} />
-            </a>
+            </Link>
           </div>
           <div className="cta-art" aria-hidden="true">
             ✳
@@ -557,15 +560,15 @@ export default function Landing() {
           </div>
           <div>
             <span>EXPLORE</span>
-            <a href="#solutions">Our solutions</a>
-            <a href="#approach">Our approach</a>
-            <a href="#resources">Resources</a>
+            <Link to="#solutions">Our solutions</Link>
+            <Link to="#approach">Our approach</Link>
+            <Link to="#resources">Resources</Link>
           </div>
           <div>
             <span>WORKSPACE</span>
-            <a href="#/app">Dashboard</a>
-            <a href="#/app/reports">Originality reports</a>
-            <a href="#/app/classes">Classes & assignments</a>
+            <Link to="/dashboard">Dashboard</Link>
+            <Link to="/dashboard/reports">Originality reports</Link>
+            <Link to="/dashboard/classes">Classes & assignments</Link>
           </div>
           <div className="footer-news">
             <span>A BETTER FUTURE STARTS WITH LEARNING.</span>

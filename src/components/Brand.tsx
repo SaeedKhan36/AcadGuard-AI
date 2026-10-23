@@ -1,9 +1,10 @@
+import { Link } from "react-router-dom";
 import { ArrowUpRight } from "lucide-react";
 export function Brand({ light = false }: { light?: boolean }) {
   return (
-    <a
+    <Link
       className={`brand ${light ? "brand-light" : ""}`}
-      href="#/"
+      to="/"
       aria-label="Turnitin home"
     >
       <span className="brand-symbol">
@@ -14,20 +15,20 @@ export function Brand({ light = false }: { light?: boolean }) {
       <span>
         turnitin<span className="brand-dot">®</span>
       </span>
-    </a>
+    </Link>
   );
 }
 export function ArrowLink({
   children,
-  href = "#/app",
+  href = "/dashboard",
 }: {
   children: React.ReactNode;
   href?: string;
 }) {
   return (
-    <a className="arrow-link" href={href}>
+    <Link className="arrow-link" to={href}>
       {children}
       <ArrowUpRight size={17} />
-    </a>
+    </Link>
   );
 }
