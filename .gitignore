@@ -6,3 +6,9 @@ dist/
 .env*
 !.env.example
 .vercel
+
+# TanStack Start / Nitro / Convex local state
+.output/
+.tanstack/
+.convex/
+.vite/

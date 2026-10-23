@@ -1,0 +1,8 @@
+node_modules/
+dist/
+.output/
+.vercel/
+.convex/
+src/routeTree.gen.ts
+convex/_generated/
+package-lock.json

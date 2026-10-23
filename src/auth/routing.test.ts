@@ -1,5 +1,5 @@
 import assert from "node:assert/strict";
-import test from "node:test";
+import { test } from "vitest";
 import { legacyDestination, authDestination } from "./routing.ts";
 
 test("old workspace links migrate to protected routes with deep links intact", () => {
@@ -50,4 +50,19 @@ test("redirect destinations reject external, protocol-relative, and disguised pa
       "/dashboard",
     );
   }
+});
+
+test("Clerk absolute return URLs are reduced to local workspace paths", () => {
+  for (const origin of ["http://127.0.0.1:5173", "https://external.example"]) {
+    assert.equal(
+      authDestination(
+        `?redirect_url=${encodeURIComponent(origin + "/dashboard/reports?view=1")}`,
+      ),
+      "/dashboard/reports?view=1",
+    );
+  }
+  assert.equal(
+    authDestination("?redirect_url=%2Fdashboard%2F..%2Fauth%2Flogin"),
+    "/dashboard",
+  );
 });

@@ -1,6 +1,7 @@
-import { useAuth } from "@clerk/react";
+import { useAuth } from "@clerk/tanstack-react-start";
 import { useEffect, useState } from "react";
-import { Navigate, useLocation } from "react-router-dom";
+import { useLocation } from "@tanstack/react-router";
+import { Navigate } from "../components/Navigation";
 import { authConfig } from "./config";
 
 export function AuthLoading() {
@@ -43,7 +44,10 @@ export default function RequireAuth({
   const location = useLocation();
   if (!isLoaded) return <AuthLoading />;
   if (!isSignedIn) {
-    const destination = location.pathname + location.search + location.hash;
+    const destination =
+      location.pathname +
+      location.searchStr +
+      (location.hash ? "#" + location.hash : "");
     return (
       <Navigate
         to={`${authConfig.signInUrl}?redirect_url=${encodeURIComponent(destination)}`}

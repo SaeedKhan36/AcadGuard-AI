@@ -1,5 +1,5 @@
-import { ClerkProvider } from "@clerk/react";
-import { useNavigate } from "react-router-dom";
+import { ClerkProvider } from "@clerk/tanstack-react-start";
+import { useAppNavigate } from "../components/Navigation";
 import { authConfig } from "./config";
 
 export default function AuthProvider({
@@ -7,7 +7,7 @@ export default function AuthProvider({
 }: {
   children: React.ReactNode;
 }) {
-  const navigate = useNavigate();
+  const navigate = useAppNavigate();
   if (!authConfig.publishableKey) {
     return (
       <main className="auth-status">
