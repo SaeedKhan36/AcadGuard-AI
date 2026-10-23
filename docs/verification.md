@@ -30,3 +30,22 @@ Checked October 23, 2026.
 - A full successful login/registration, account management, and sign-out require a user to complete the identity-provider flow. They were not performed with a real account during implementation.
 
 Authentication uses Clerk; document handling and report generation remain local UI demonstrations. The Rust backend was not accessed or modified.
+
+## pnpm workspace and engine import
+
+Checked October 23, 2026 with Node.js 24.22.1, pnpm 11.10.0, and Rust 1.97.1.
+The sections above record checks and commands from before the monorepo migration.
+
+- `pnpm install --frozen-lockfile` passes across the root, web app, and engine wrapper.
+- `pnpm check` passes strict TypeScript checking and Cargo checks for both crates, including tests and examples.
+- `pnpm test` passes 66 tests: four browser routing tests, 59 Rust unit tests, and three CLI integration tests.
+- `pnpm build` builds the web bundle and Rust release binary. `pnpm build:web` builds the browser app independently.
+- Root development and preview commands serve the relocated app, authentication and dashboard deep links, and favicon. Development also serves the relocated TypeScript entry point.
+- `pnpm engine --help` forwards arguments to the Rust CLI.
+- `pnpm demo:engine` ingests the bundled corpus and produces a 45% similarity report across two sources. Quote/bibliography filtering reduces similarity, and homoglyph flags appear in the report.
+- All 32 imported engine source, lock, test, example, and configuration files match the original source checkout. The imported README adds workspace usage instructions.
+- All 19 moved browser source, asset, and configuration files retain their original contents. Direct JavaScript dependencies retain their npm-locked versions.
+- Turbo build hashes change when `VITE_*` environment settings or ignored web environment files change. The web build cache was reused by the full workspace build.
+- Build artifacts, engine demo databases/reports, Turbo caches, and local environment files are ignored by Git.
+
+The checked-in Vercel configuration now uses the web-only pnpm build and `apps/web/dist`. No deployment was performed. The engine is available through its library and CLI; browser submissions still use demo data.

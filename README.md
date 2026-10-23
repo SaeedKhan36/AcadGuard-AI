@@ -1,34 +1,58 @@
 # AcadGuard AI: An Intelligent Academic Integrity Platform for Plagiarism Detection, Semantic Similarity Analysis, and Citation Verification
-A responsive, independently designed frontend inspired by Turnitin’s public product offering, with Clerk authentication. Warm ivory, forest ink, soft sage, and lime create a distinct visual system for the marketing site and educator workspace.
+A pnpm and Turborepo workspace containing the React frontend and the Rust plagiarism detection engine. The frontend uses Clerk authentication and includes a marketing site and educator workspace.
 
-**This is an independent prototype, not an official Turnitin service.** Authentication is real and provided by Clerk. Documents, originality scores, AI indicators, and reports remain illustrative. No plagiarism checking, AI detection, document transmission, or Rust backend integration is implemented. Turnitin and its product names belong to their respective owners.
+**This is an independent prototype, not an official Turnitin service.** Authentication is real and provided by Clerk. Documents, originality scores, AI indicators, and reports remain illustrative. The Rust engine runs locally through its CLI. The browser does not call it yet, and browser submissions are not transmitted or analyzed. AI detection is not implemented. Turnitin and its product names belong to their respective owners.
 
 ![Landing page preview](docs/landing-preview.jpg)
 
 ## Run locally
 
-Requires Node.js 22.12+.
+Requires Node.js 22.13+, pnpm 11.10.0, and a Rust toolchain with Cargo for engine commands. The imported engine was validated with Rust 1.97.1. Install the pinned pnpm version with Corepack or follow the [pnpm installation guide](https://pnpm.io/installation).
 
 ```sh
-npm install
-cp .env.example .env.local
+corepack enable
+corepack install
+pnpm install --frozen-lockfile
+cp apps/web/.env.example apps/web/.env.local
 ```
 
-Replace the placeholder publishable key in `.env.local` with your own Clerk publishable key. The supplied application is already configured in the current local checkout; do not overwrite its working `.env.local`.
+Put your Clerk publishable key in `apps/web/.env.local`. Keep an existing working environment file. If migrating an older checkout, move its root `.env.local` to `apps/web/.env.local`.
 
 ```sh
-npm run dev
+pnpm dev
 ```
 
 Open the local URL printed by Vite, normally http://127.0.0.1:5173/.
 
 ```sh
-npm test
-npm run build
-npm run preview
+pnpm check      # TypeScript and both Rust crates, including test/example targets
+pnpm test       # Browser routing tests and Rust unit, CLI, and doc tests
+pnpm build      # Web bundle and Rust release binary
+pnpm build:web  # Web bundle only; no Rust toolchain needed
+pnpm preview    # Serve apps/web/dist locally
 ```
 
-The build performs strict TypeScript checking and produces static assets in `dist/`. The tests check compatibility redirects, workspace return paths, and rejection of external redirect destinations.
+The browser build performs strict TypeScript checking and writes `apps/web/dist/`. The engine binary is `packages/plagengine/target/release/plagengine`. Turborepo caches web tasks, with `VITE_*` settings and web environment files included in build inputs. Cargo manages its own incremental artifacts; Rust tasks bypass Turbo caching to avoid reusing native results across toolchains and platforms. Turbo's cache stays in this checkout's `.turbo/cache`.
+
+The frontend uses TypeScript 5.9.
+
+## Plagiarism engine
+
+Both Rust crates, their dependency lockfile, tests, evaluation tools, and demo corpus were imported from `/home/shujanforge/Projects/plagenine` into `packages/plagengine`. The source directory is unchanged.
+
+- `plagengine-core` extracts TXT, Markdown, PDF, and DOCX documents, normalizes text, fingerprints token sequences with winnowing, retrieves candidates from a redb index, aligns passages, attributes overlapping sources, and produces filtered similarity reports.
+- It classifies quotations and citations and flags hidden text, homoglyph replacements, and invisible character manipulation.
+- `plagengine` exposes ingestion, checking, saved report filtering, source inspection, and PAN/adversarial evaluation through the CLI.
+
+```sh
+pnpm engine --help
+pnpm demo:engine
+pnpm engine --db /tmp/acadguard-example.db stats
+```
+
+The demo creates its own local index and reports under `packages/plagengine/examples/demo/`. Generated databases, reports, and build artifacts are ignored by Git. All Cargo scripts use the imported `Cargo.lock` with `--locked`.
+
+See the [engine README](packages/plagengine/README.md) for CLI examples, the report schema, algorithm details, evaluation results, and limitations. The engine compares against sources you ingest; it does not search the web or provide semantic or AI writing detection. Browser-to-engine API integration remains future work.
 
 ## Clerk configuration
 
@@ -83,32 +107,38 @@ Old links such as `/#/app/reports` redirect to the matching protected `/dashboar
 ## Structure
 
 ```text
-src/
-  App.tsx                   Browser routes and page selection
-  main.tsx                  React, router, and auth entry point
-  auth/
-    AuthProvider.tsx        Clerk configuration and theme
-    RequireAuth.tsx         Session loading and workspace protection
-    config.ts               Public environment configuration
-    routing.ts              Safe return URLs and legacy redirects
-    routing.test.ts         Redirect regression tests
-  components/
-    Brand.tsx               Concept wordmark and shared link
-    ReportPreview.tsx       Landing page report composition
-  pages/
-    Landing.tsx             Public marketing site
-    Login.tsx               Clerk sign-in and registration
-    Workspace.tsx           Protected screens and demo interactions
-  styles.css                Shared visual system and responsive styles
-public/favicon.svg          Custom concept favicon
-docs/sample-submission.txt  Safe fixture for checking the local file flow
+apps/web/
+  package.json              React + Vite package and browser commands
+  .env.example              Public Clerk configuration template
+  src/
+    App.tsx                 Browser routes and page selection
+    main.tsx                React, router, and auth entry point
+    auth/                   Clerk provider, route guards, redirect tests
+    components/             Brand and report preview components
+    pages/                  Landing, login, and demo workspace screens
+    styles.css              Shared visual system and responsive styles
+  public/favicon.svg        Custom concept favicon
+packages/plagengine/
+  package.json              Cargo commands exposed to pnpm and Turbo
+  Cargo.toml                Rust workspace
+  Cargo.lock                Locked Rust dependencies
+  crates/core/              Detection algorithms, extraction, index, reports
+  crates/cli/               CLI and end-to-end tests
+  examples/demo/            Local corpus, sample essay, demo script
+  README.md                 Engine usage, report format, evaluations
+  PLAN.md                   Original engine design notes
+docs/                       UI previews, fixtures, verification history
+pnpm-workspace.yaml         pnpm packages and allowed dependency builds
+pnpm-lock.yaml              Locked JavaScript dependencies
+turbo.json                  Build, check, test, and development tasks
+vercel.json                 Web-only build and SPA rewrites
 ```
 
 ## Hosting and future Rust backend integration
 
-Browser routes need an SPA fallback: serve `index.html` for `/auth/*` and `/dashboard/*`, while serving asset files normally. Vite's development and preview servers support this automatically. Set the public environment variables in the hosting service before building.
+Browser routes need an SPA fallback: serve `index.html` for `/auth/*` and `/dashboard/*`, while serving asset files normally. Vite's development and preview servers support this automatically. Set the public environment variables in the hosting service before building. The checked-in `vercel.json` expects the repository root, installs with pnpm, runs `pnpm build:web`, and serves `apps/web/dist`. It does not build or host the Rust CLI.
 
-The route guard protects the UI only. Once the Rust backend is connected, validate Clerk session JWTs on **every protected API endpoint** before accessing data; frontend route guards do not authorize server requests. Replace the in-memory documents and feedback with authenticated API calls at that stage. No backend folder was accessed or changed.
+The route guard protects the UI only. Once the Rust backend is connected, validate Clerk session JWTs on **every protected API endpoint** before accessing data; frontend route guards do not authorize server requests. Replace the in-memory documents and feedback with authenticated API calls at that stage. The Rust engine is available as a local library and CLI; an authenticated HTTP API is not included.
 
 ## Content reference
 
