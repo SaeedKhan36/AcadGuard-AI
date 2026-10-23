@@ -1,0 +1,5 @@
+A perspective of my own
+
+This is an intentional test fixture for the independent Turnitin UI concept.
+The interface uses the filename only. It does not read or analyze this content.
+All displayed scores, highlights, sources, and AI indicators are sample data.
